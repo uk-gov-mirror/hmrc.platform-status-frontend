@@ -18,14 +18,16 @@ package uk.gov.hmrc.platformstatusfrontend.auth
 
 import play.api.mvc.*
 import uk.gov.hmrc.internalauth.client.{FrontendAuthComponents, IAAction, Predicate, Resource, ResourceLocation, ResourceType}
+import uk.gov.hmrc.platformstatusfrontend.config.AppConfig
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class PlatformStatusAuthAction @Inject()(
-  auth: FrontendAuthComponents,
-  mcc : MessagesControllerComponents
+  auth     : FrontendAuthComponents,
+  appConfig: AppConfig,
+  mcc      : MessagesControllerComponents
 )(using
   ec: ExecutionContext
 ) extends ActionBuilder[MessagesRequest, AnyContent]:
@@ -40,9 +42,14 @@ class PlatformStatusAuthAction @Inject()(
     ec
 
   override def invokeBlock[A](request: Request[A], block: MessagesRequest[A] => Future[Result]): Future[Result] =
-    auth
-      .authorizedAction(continueUrl(request), readPermission)
-      .invokeBlock[A](request, authenticatedRequest => block(MessagesRequest(authenticatedRequest.request, mcc.messagesApi)))
+    if appConfig.internalAuthEnabled then
+      // Internal auth is enabled - use internal-auth client
+      auth
+        .authorizedAction(continueUrl(request), readPermission)
+        .invokeBlock[A](request, authenticatedRequest => block(MessagesRequest(authenticatedRequest.request, mcc.messagesApi)))
+    else
+      // Internal auth is disabled - pass through without authentication
+      block(MessagesRequest(request, mcc.messagesApi))
 
   private def continueUrl(request: RequestHeader): Call =
     Call("GET", request.uri)
