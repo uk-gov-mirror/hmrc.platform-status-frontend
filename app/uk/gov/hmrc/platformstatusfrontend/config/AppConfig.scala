@@ -48,3 +48,6 @@ class AppConfig @Inject()(config: Configuration):
   lazy val iteration4Enabled: Boolean = config.get[Boolean]("checks.iteration4.enabled")
   lazy val iteration5Enabled: Boolean = config.get[Boolean]("checks.iteration5.enabled")
   lazy val iteration6Enabled: Boolean = config.get[Boolean]("checks.iteration6.enabled")
+
+  lazy val internalAuthEnabled: Boolean = config.get[Boolean]("internalAuth.enabled")
+
